@@ -16,7 +16,14 @@ const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
-db.connect();
+db.connect((err, client, release) => {
+  if (err) {
+    console.error("Database connection error:", err.message);
+  } else {
+    console.log("Database Connected Successfully");
+    release();
+  }
+});
 
 app.use(
   cors({
