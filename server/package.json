@@ -1,5 +1,5 @@
 {
-  "name": "book-notes",
+  "name": "book-notes-backend",
   "version": "1.0.0",
   "description": "Personal book reading tracker with notes and ratings",
   "main": "index.js",
