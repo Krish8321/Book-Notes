@@ -37,17 +37,15 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.set("trust proxy", 1);
+
 // session setup
 app.use(
   session({
-    store: new PgStore({
-      conString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      createTableIfMissing: true,
-    }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7,
