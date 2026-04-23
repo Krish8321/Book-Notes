@@ -6,6 +6,9 @@ import cors from "cors";
 import env from "dotenv";
 import bcrypt from "bcrypt";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+
+const PgStore = connectPgSimple(session);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -37,14 +40,19 @@ app.use(express.urlencoded({ extended: true }));
 // session setup
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "local_secret",
+    store: new PgStore({
+      conString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // one day
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      secure: true,
+      sameSite: "none",
     },
   }),
 );
