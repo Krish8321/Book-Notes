@@ -87,7 +87,7 @@ function App() {
 
   // Check if a session already exists on page load
   useEffect(() => {
-    axios.get('http://localhost:3000/auth/me', { withCredentials: true })
+    axios.get('/auth/me', { withCredentials: true })
       .then((res) => setUser(res.data.user))
       .catch(() => setUser(null))
       .finally(() => setAuthChecked(true));
@@ -96,7 +96,7 @@ function App() {
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:3000/books?sort=${sort}`, { withCredentials: true });
+      const res = await axios.get(`/books?sort=${sort}`, { withCredentials: true });
       setBooks(res.data.rows || res.data);
     } catch (err) {
       console.error('Error fetching books:', err);
@@ -112,7 +112,7 @@ function App() {
   const deleteBook = async (id) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
       try {
-        await axios.delete(`http://localhost:3000/books/${id}`, { withCredentials: true });
+        await axios.delete(`/books/${id}`, { withCredentials: true });
         setBooks((prev) => prev.filter((b) => b.id !== id));
       } catch (err) {
         console.error('Error deleting book:', err);
@@ -122,7 +122,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:3000/auth/logout', {}, { withCredentials: true });
+      await axios.post('/auth/logout', {}, { withCredentials: true });
       setUser(null);
       setBooks([]);
     } catch (err) {
