@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://book-notes-1pz5.onrender.com/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
