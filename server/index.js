@@ -10,10 +10,11 @@ import connectPgSimple from "connect-pg-simple";
 
 const PgStore = connectPgSimple(session);
 
+env.config();
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3000;
-env.config();
+const PORT = process.env.PORT || 3000;
 
 const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -28,9 +29,15 @@ db.connect((err, client, release) => {
   }
 });
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:5000",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -39,9 +46,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.set("trust proxy", 1);
 
+const isProd = process.env.NODE_ENV === "production";
+
 // session setup
 app.use(
   session({
+    store: new PgStore({
+      pool: db,
+    }),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -49,8 +61,8 @@ app.use(
     cookie: {
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7,
-      secure: true,
-      sameSite: "none",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     },
   }),
 );
@@ -267,11 +279,40 @@ app.delete("/books/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── Ping / Health check endpoint ──
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
 // ── 404 fallback ──
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
-app.listen(PORT, () =>
-  console.log(`📚  Book Notes API running on http://localhost:${PORT}`),
-);
+// ── Coldstart Keep-Alive Mechanism ──
+const selfPing = () => {
+  const url = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+  if (!url) {
+    console.log("[Coldstart Keeper] No external URL configured (RENDER_EXTERNAL_URL or BACKEND_URL). Skipping self-ping.");
+    return;
+  }
+
+  // Ping every 14 minutes to prevent Render free-tier spin-down (15 mins inactivity limit)
+  const interval = 14 * 60 * 1000;
+  
+  setInterval(async () => {
+    try {
+      const pingUrl = url.endsWith("/ping") ? url : `${url.replace(/\/$/, "")}/ping`;
+      console.log(`[Coldstart Keeper] Pinging backend to keep warm: ${pingUrl}`);
+      const response = await fetch(pingUrl);
+      console.log(`[Coldstart Keeper] Ping response status: ${response.status} (${response.statusText})`);
+    } catch (error) {
+      console.error("[Coldstart Keeper] Error during self-ping:", error.message);
+    }
+  }, interval);
+};
+
+app.listen(PORT, () => {
+  console.log(`📚  Book Notes API running on http://localhost:${PORT}`);
+  selfPing();
+});
