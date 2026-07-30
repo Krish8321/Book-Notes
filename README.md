@@ -46,3 +46,6 @@ This project was built to practice real-world backend development, authenticatio
 ### Database
 - PostgreSQL
 - Neon (Cloud Database)
+
+This is the Development Part of the Book Notes Web Application
+
